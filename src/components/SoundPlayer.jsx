@@ -2,13 +2,17 @@ import { useState, useEffect } from 'react';
 import { Howl } from 'howler';
 
 export const SoundPlayer = ({ playSoundSignal }) => {
-    const [sound] = useState(
+    const [sound] = useState(() =>
         new Howl({
             src: ['./sounds/nani.mp3'],
             volume: 1.0,
             loop: true,
         })
     );
+
+    useEffect(() => {
+        return () => sound.unload();
+    }, [sound]);
 
     const soundFunctions = {
         play: () => sound.play(),

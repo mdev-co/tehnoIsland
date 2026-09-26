@@ -79,15 +79,18 @@ export const SceneContainer = ({ darkMode = false, isMenuOpen }) => {
     meshInside.position.set(1.17, 11.9, -4)
     meshInside.scale.set(1.5, 1, 1)
 
-    const updateXOffset = () => {
-        setInterval(() => {
+    useEffect(() => {
+        const intervalId = setInterval(() => {
             if (xOffset <= 10) {
                 xOffset += 0.1;
-            } else { return }
+            } else {
+                clearInterval(intervalId);
+            }
         }, 100);
-    };
 
-    updateXOffset();
+        return () => clearInterval(intervalId);
+    }, []);
+
     useFrame(() => {
         if (hue !== targetHue) {
             const diff = targetHue - hue;

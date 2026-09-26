@@ -127,7 +127,7 @@ function App() {
 				</div>
 
 				<div onClick={() => setIsMenuOpen(!isMenuOpen)}>
-					<Canvas style={CanvasSizeStyles}>
+					<Canvas style={CanvasSizeStyles} dpr={[1, 1.5]}>
 						{spotLights.map((spotLight, index) => (
 							<spotLight
 								key={index}

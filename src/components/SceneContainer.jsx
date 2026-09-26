@@ -170,7 +170,7 @@ export const SceneContainer = ({ darkMode = false, isMenuOpen }) => {
 // Efekty tworzone raz. Tryb ciemny zmieniamy przez refy, bo @react-three/postprocessing
 // tworzy efekt od nowa przy kazdym renderze i nie zwalnia starego.
 const SceneEffects = memo(({ hueEffectRef, godRaysRef }) => (
-    <EffectComposer stencilBuffer={true}>
+    <EffectComposer stencilBuffer={true} multisampling={0}>
         <DepthOfField
             focusDistance={0.012}
             focalLength={0.015}

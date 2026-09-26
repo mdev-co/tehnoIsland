@@ -1,4 +1,4 @@
-import { useState, useMemo, Suspense, useRef, useEffect } from 'react';
+import { useState, Suspense, useRef, useEffect, memo } from 'react';
 import { Color, CylinderGeometry, Mesh, MeshBasicMaterial } from 'three';
 import { BrightnessContrast, ChromaticAberration, DepthOfField, EffectComposer, GodRays, HueSaturation } from "@react-three/postprocessing";
 import { BlendFunction, Resizer, KernelSize } from 'postprocessing';
@@ -45,8 +45,10 @@ mesh.scale.set(1.5, 1, 1)
 
 let xOffset = 0;
 export const SceneContainer = ({ darkMode = false, isMenuOpen }) => {
-    const targetHue = useMemo(() => (darkMode ? 5 : 0), [darkMode]);
-    const [hue, setHue] = useState(targetHue);
+    const targetHue = darkMode ? 5 : 0;
+    const hueRef = useRef(targetHue);
+    const hueEffectRef = useRef();
+    const godRaysRef = useRef();
     const [userControlCamera, setUserControlCamera] = useState(false);
 
     useEffect(() => {
@@ -91,17 +93,20 @@ export const SceneContainer = ({ darkMode = false, isMenuOpen }) => {
         return () => clearInterval(intervalId);
     }, []);
 
-    useFrame(() => {
-        if (hue !== targetHue) {
-            const diff = targetHue - hue;
-            const speed = 0.1;
-            const newHue = hue + diff * speed
+    useEffect(() => {
+        if (hueEffectRef.current) hueEffectRef.current.saturation = darkMode ? -0.35 : -0.15;
+        if (godRaysRef.current) godRaysRef.current.lightSource = darkMode ? meshInside : mesh;
+    }, [darkMode]);
 
-            if (Number(newHue.toFixed(0)) !== targetHue) {
-                setHue(newHue);
-            } else {
-                setHue(targetHue);
-            }
+    useFrame(() => {
+        const hueEffect = hueEffectRef.current;
+        if (hueEffect && hueRef.current !== targetHue) {
+            const diff = targetHue - hueRef.current;
+            const speed = 0.1;
+            const newHue = hueRef.current + diff * speed
+
+            hueRef.current = Number(newHue.toFixed(0)) !== targetHue ? newHue : targetHue;
+            hueEffect.hue = hueRef.current;
         }
         const camera = cameraRef.current;
 
@@ -157,30 +162,37 @@ export const SceneContainer = ({ darkMode = false, isMenuOpen }) => {
                 <SceneParticles />
             </Float>
             <FloatingRocks darkMode={darkMode} />
-            <EffectComposer stencilBuffer={true}>
-                <DepthOfField
-                    focusDistance={0.012}
-                    focalLength={0.015}
-                    bokehScale={3}
-                />
-                <HueSaturation hue={hue} saturation={darkMode ? - 0.35 : -0.15} />
-                <BrightnessContrast brightness={0.0} contrast={0.035} />
-                <ChromaticAberration radialModulation={true} offset={[0.00175, 0.00175]} />
-                <GodRays
-                    sun={darkMode ? meshInside : mesh}
-                    blendFunction={BlendFunction.Screen}
-                    samples={20}
-                    density={0.97}
-                    decay={0.97}
-                    weight={0.6}
-                    exposure={0.3}
-                    clampMax={1}
-                    width={Resizer.AUTO_SIZE}
-                    height={Resizer.AUTO_SIZE}
-                    kernelSize={KernelSize.SMALL}
-                    blur={true}
-                />
-            </EffectComposer>
+            <SceneEffects hueEffectRef={hueEffectRef} godRaysRef={godRaysRef} />
         </Suspense>
     )
 }
+
+// Efekty tworzone raz. Tryb ciemny zmieniamy przez refy, bo @react-three/postprocessing
+// tworzy efekt od nowa przy kazdym renderze i nie zwalnia starego.
+const SceneEffects = memo(({ hueEffectRef, godRaysRef }) => (
+    <EffectComposer stencilBuffer={true}>
+        <DepthOfField
+            focusDistance={0.012}
+            focalLength={0.015}
+            bokehScale={3}
+        />
+        <HueSaturation ref={hueEffectRef} hue={0} saturation={-0.15} />
+        <BrightnessContrast brightness={0.0} contrast={0.035} />
+        <ChromaticAberration radialModulation={true} offset={[0.00175, 0.00175]} />
+        <GodRays
+            ref={godRaysRef}
+            sun={mesh}
+            blendFunction={BlendFunction.Screen}
+            samples={20}
+            density={0.97}
+            decay={0.97}
+            weight={0.6}
+            exposure={0.3}
+            clampMax={1}
+            width={Resizer.AUTO_SIZE}
+            height={Resizer.AUTO_SIZE}
+            kernelSize={KernelSize.SMALL}
+            blur={true}
+        />
+    </EffectComposer>
+));

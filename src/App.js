@@ -1,13 +1,14 @@
 import { Canvas } from "@react-three/fiber";
 import { SceneContainer } from "./components/SceneContainer";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { SoundPlayer } from "./components/SoundPlayer";
 import { ReactComponent as ArrowsIcon } from "./icons/rotationArrows.svg";
 import _ from "lodash";
 
 const CanvasSizeStyles = {
-	width: "1200px",
-	height: "800px",
+	width: "min(1200px, calc(100vw - 32px))",
+	height: "auto",
+	aspectRatio: "3 / 2",
 	borderRadius: "10px",
 	border: "2px solid black",
 };
@@ -73,14 +74,22 @@ function App() {
 	const [isButtonDisabled, setIsButtonDisabled] = useState(false);
 	const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-	const handleDarkModeToggle = _.debounce(() => {
-		setIsButtonDisabled(true);
-		setDarkMode((prevDarkMode) => !prevDarkMode);
-		setPlaySoundSignal(!playSoundSignal);
-		setTimeout(() => {
-			setIsButtonDisabled(false);
-		}, 500);
-	}, 500);
+	const handleDarkModeToggle = useMemo(
+		() =>
+			_.debounce(() => {
+				setIsButtonDisabled(true);
+				setDarkMode((prevDarkMode) => !prevDarkMode);
+				setPlaySoundSignal((prevSignal) => !prevSignal);
+				setTimeout(() => {
+					setIsButtonDisabled(false);
+				}, 500);
+			}, 500),
+		[]
+	);
+
+	useEffect(() => {
+		return () => handleDarkModeToggle.cancel();
+	}, [handleDarkModeToggle]);
 
 	return (
 		<>
